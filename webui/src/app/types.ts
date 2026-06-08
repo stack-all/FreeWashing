@@ -35,6 +35,9 @@ export interface AppState {
   grantedDevices: BluetoothDeviceSummary[];
   selectedGrantedDeviceId: string;
   canInstall: boolean;
+  appInstalled: boolean;
+  updateAvailable: boolean;
+  isUpdating: boolean;
   isSending: boolean;
   logs: LogEntry[];
   status: StatusViewState;

@@ -3,6 +3,7 @@ import { Icon } from "../ui/Icon";
 
 interface ConnectionViewProps {
   canInstall: boolean;
+  appInstalled: boolean;
   canUseBluetooth: boolean;
   connected: boolean;
   connectedDevice: ConnectedDevice | null;
@@ -20,6 +21,7 @@ interface ConnectionViewProps {
 
 export function ConnectionView({
   canInstall,
+  appInstalled,
   canUseBluetooth,
   connected,
   connectedDevice,
@@ -36,12 +38,16 @@ export function ConnectionView({
 }: ConnectionViewProps) {
   return (
     <section className="connection-view stack-sm">
-      {canInstall ? (
-        <button className="button ghost install-action" type="button" onClick={onInstall}>
-          <Icon name="download" />
-          安装 PWA
-        </button>
-      ) : null}
+      <button
+        className="button ghost install-action"
+        type="button"
+        disabled={appInstalled}
+        title={canInstall ? "安装应用" : "也可以从浏览器菜单安装或添加到主屏幕"}
+        onClick={onInstall}
+      >
+        <Icon name="download" />
+        {appInstalled ? "已安装 PWA" : "安装 PWA"}
+      </button>
       <section className="panel">
         <div className="panel-header">
           <div className="panel-title">

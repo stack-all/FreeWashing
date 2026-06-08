@@ -28,7 +28,14 @@ import {
   type WasherModeDefinition
 } from "./domain/protocol";
 import { WasherBluetoothClient, type ConnectedDevice } from "./services/bluetooth";
-import { registerServiceWorker, type InstallPromptEvent } from "./services/pwa";
+import {
+  activateServiceWorkerUpdate,
+  isPwaInstalled,
+  registerServiceWorker,
+  reloadWithFreshBuild,
+  type InstallPromptEvent,
+  type PwaUpdate
+} from "./services/pwa";
 import { loadSettings, saveSettings } from "./services/storage";
 import { Icon } from "./ui/Icon";
 
@@ -42,6 +49,9 @@ function createInitialState(): AppState {
     grantedDevices: [],
     selectedGrantedDeviceId: "",
     canInstall: false,
+    appInstalled: isPwaInstalled(),
+    updateAvailable: false,
+    isUpdating: false,
     isSending: false,
     logs: [],
     status: DEFAULT_STATUS_STATE,
@@ -58,6 +68,7 @@ export function App() {
   const statusQueryIdRef = useRef(0);
   const statusQueryTimerRef = useRef<number | null>(null);
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
+  const pendingUpdateRef = useRef<PwaUpdate | null>(null);
 
   useEffect(() => {
     stateRef.current = state;
@@ -229,20 +240,46 @@ export function App() {
     [addLog, bluetoothClient]
   );
 
+  const handlePwaUpdateReady = useCallback(
+    (update: PwaUpdate) => {
+      pendingUpdateRef.current = update;
+      setState((previous) => {
+        if (previous.updateAvailable) {
+          return previous;
+        }
+        return {
+          ...previous,
+          updateAvailable: true
+        };
+      });
+      addLog(update.source === "assets" ? "检测到 GitHub Pages 新版本" : "检测到离线缓存新版本", "info");
+    },
+    [addLog]
+  );
+
   useEffect(() => {
     const handleOnline = () => setState((previous) => ({ ...previous, online: true }));
     const handleOffline = () => setState((previous) => ({ ...previous, online: false }));
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       installPromptRef.current = event as InstallPromptEvent;
-      setState((previous) => ({ ...previous, canInstall: true }));
+      setState((previous) => ({ ...previous, canInstall: true, appInstalled: false }));
+    };
+    const handleAppInstalled = () => {
+      installPromptRef.current = null;
+      setState((previous) => ({ ...previous, canInstall: false, appInstalled: true }));
+      addLog("PWA 已安装", "success");
     };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
-    registerServiceWorker((message) => addLog(message, "info"));
+    const unregisterServiceWorkerEvents = registerServiceWorker({
+      onStatus: (message) => addLog(message, "info"),
+      onUpdateReady: handlePwaUpdateReady
+    });
     void bluetoothClient.isAvailable().then((available) => {
       setState((previous) => ({ ...previous, bluetoothAvailable: available }));
     });
@@ -252,9 +289,11 @@ export function App() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
+      unregisterServiceWorkerEvents();
       clearStatusQueryTimer();
     };
-  }, [addLog, bluetoothClient, clearStatusQueryTimer, refreshGrantedDevices]);
+  }, [addLog, bluetoothClient, clearStatusQueryTimer, handlePwaUpdateReady, refreshGrantedDevices]);
 
   const setActiveAppTab = useCallback((tab: AppTabId) => {
     setState((previous) => {
@@ -498,7 +537,13 @@ export function App() {
   }, [addLog]);
 
   const installPwa = useCallback(async () => {
+    if (stateRef.current.appInstalled) {
+      addLog("PWA 已安装", "info");
+      return;
+    }
+
     if (!installPromptRef.current) {
+      addLog("当前浏览器暂未提供安装弹窗，可从浏览器菜单选择安装应用或添加到主屏幕", "info");
       return;
     }
 
@@ -506,6 +551,21 @@ export function App() {
     await installPromptRef.current.userChoice;
     installPromptRef.current = null;
     setState((previous) => ({ ...previous, canInstall: false }));
+  }, [addLog]);
+
+  const applyPwaUpdate = useCallback(async () => {
+    if (!stateRef.current.updateAvailable || stateRef.current.isUpdating) {
+      return;
+    }
+
+    setState((previous) => ({ ...previous, isUpdating: true }));
+    const update = pendingUpdateRef.current;
+    if (activateServiceWorkerUpdate(update?.registration ?? null)) {
+      window.setTimeout(() => void reloadWithFreshBuild(), 3000);
+      return;
+    }
+
+    await reloadWithFreshBuild();
   }, []);
 
   const controlContent = getControlContent(state.activeControlTab);
@@ -526,6 +586,16 @@ export function App() {
         </header>
         <ModuleLoopToggle />
 
+        {state.updateAvailable ? (
+          <div className="update-banner" role="status" aria-live="polite">
+            <span>检测到新版本</span>
+            <button className="button primary compact update-action" type="button" disabled={state.isUpdating} onClick={() => void applyPwaUpdate()}>
+              <Icon name="refresh" />
+              {state.isUpdating ? "更新中" : "更新"}
+            </button>
+          </div>
+        ) : null}
+
         <EnvironmentNotice
           bluetoothSupported={bluetoothClient.isSupported}
           secureContext={state.secureContext}
@@ -541,6 +611,7 @@ export function App() {
           ) : (
             <ConnectionView
               canInstall={state.canInstall}
+              appInstalled={state.appInstalled}
               canUseBluetooth={canUseBluetooth}
               connected={connected}
               connectedDevice={state.connectedDevice}

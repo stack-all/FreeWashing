@@ -1,4 +1,4 @@
-const CACHE_NAME = "freewashing-v5";
+const CACHE_NAME = "freewashing-v6";
 
 const shellAssets = [
   "./",
@@ -12,7 +12,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(shellAssets))
   );
-  self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
@@ -26,11 +25,23 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  const type = event.data && event.data.type;
+  if (type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
   if (request.method !== "GET" || url.origin !== self.location.origin) {
+    return;
+  }
+
+  if (url.searchParams.has("__fw_update_check") || url.searchParams.has("__fw_reload")) {
+    event.respondWith(fetch(request));
     return;
   }
 
