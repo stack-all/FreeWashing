@@ -748,13 +748,6 @@ code,
   color: #9f1239;
 }
 
-.footer-note {
-  margin: 18px 0 4px;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  text-align: center;
-}
-
 @media (max-width: 860px) {
   .app-shell {
     padding: 12px;

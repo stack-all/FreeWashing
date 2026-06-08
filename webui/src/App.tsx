@@ -563,7 +563,6 @@ export function App() {
           )}
         </div>
 
-        <p className="footer-note">运行时资源全部来自本仓库；Web Bluetooth 需要 Chrome/Edge 等 Chromium 浏览器与 HTTPS 或 localhost。</p>
       </div>
     </main>
   );
