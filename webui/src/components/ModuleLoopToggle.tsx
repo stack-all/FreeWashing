@@ -50,8 +50,16 @@ export function ModuleLoopToggle() {
   };
 
   return (
-    <audio ref={audioRef} autoPlay hidden loop preload="auto" onCanPlay={() => void playLoop()} onPause={resumeAfterPause}>
-      <source src={`${AUDIO_BASE}.ogg`} type="audio/ogg" />
+    <audio
+      ref={audioRef}
+      autoPlay
+      hidden
+      loop
+      preload="auto"
+      src={`${AUDIO_BASE}.mod`}
+      onCanPlay={() => void playLoop()}
+      onPause={resumeAfterPause}
+    >
       <source src={`${AUDIO_BASE}.mod`} type="audio/x-mod" />
     </audio>
   );
