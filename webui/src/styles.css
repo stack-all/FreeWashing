@@ -97,30 +97,6 @@ button {
   font-size: 0.94rem;
 }
 
-.top-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  gap: 8px;
-}
-
-.module-loop {
-  display: flex;
-  align-items: center;
-}
-
-.module-loop-button {
-  width: auto;
-  min-width: 96px;
-  border-color: var(--line-strong);
-}
-
-.module-loop-button.active {
-  border-color: rgba(15, 118, 110, 0.36);
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-}
-
 .app-tabs {
   display: grid;
   width: 100%;
@@ -789,10 +765,6 @@ code,
     flex-direction: column;
   }
 
-  .top-actions {
-    justify-content: flex-start;
-  }
-
   .layout {
     grid-template-columns: 1fr;
   }
@@ -809,13 +781,8 @@ code,
     grid-template-columns: 1fr;
   }
 
-  .top-actions .badge,
   .button {
     width: 100%;
-  }
-
-  .top-actions .module-loop-button {
-    width: auto;
   }
 
   .tab-strip {

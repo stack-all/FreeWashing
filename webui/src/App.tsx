@@ -523,10 +523,8 @@ export function App() {
               <p>宿舍洗衣机蓝牙控制台</p>
             </div>
           </div>
-          <div className="top-actions" aria-label="页面辅助控制">
-            <ModuleLoopToggle />
-          </div>
         </header>
+        <ModuleLoopToggle />
 
         <EnvironmentNotice
           bluetoothSupported={bluetoothClient.isSupported}
