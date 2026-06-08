@@ -6,6 +6,9 @@ export const ICONS = {
   power: '<path d="M12 3v8"/><path d="M6.8 6.8a8 8 0 1 0 10.4 0"/>',
   pause: '<path d="M8 5v14"/><path d="M16 5v14"/>',
   play: '<path d="M8 5v14l11-7-11-7z"/>',
+  volume: '<path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>',
+  volumeOff:
+    '<path d="M11 5L6 9H3v6h3l5 4V5z"/><path d="M17 9l5 5"/><path d="M22 9l-5 5"/>',
   send: '<path d="M3 11l18-8-8 18-2-7-8-3z"/><path d="M11 14l10-11"/>',
   droplet: '<path d="M12 3s7 7.1 7 12a7 7 0 0 1-14 0c0-4.9 7-12 7-12z"/>',
   settings:

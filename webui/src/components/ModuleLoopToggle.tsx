@@ -1,9 +1,12 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Icon } from "../ui/Icon";
 
 const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/freewashing_8bit_loop`;
 
 export function ModuleLoopToggle() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+  const mutedRef = useRef(false);
 
   const playLoop = useCallback(async () => {
     const audio = audioRef.current;
@@ -12,7 +15,7 @@ export function ModuleLoopToggle() {
     }
 
     audio.volume = 0.36;
-    audio.muted = false;
+    audio.muted = mutedRef.current;
     try {
       await audio.play();
     } catch {
@@ -49,18 +52,42 @@ export function ModuleLoopToggle() {
     window.setTimeout(() => void playLoop(), 250);
   };
 
+  const toggleMuted = () => {
+    const next = !mutedRef.current;
+    mutedRef.current = next;
+    if (audioRef.current) {
+      audioRef.current.muted = next;
+    }
+    setIsMuted(next);
+    if (!next) {
+      void playLoop();
+    }
+  };
+
   return (
-    <audio
-      ref={audioRef}
-      autoPlay
-      hidden
-      loop
-      preload="auto"
-      src={`${AUDIO_BASE}.mod`}
-      onCanPlay={() => void playLoop()}
-      onPause={resumeAfterPause}
-    >
-      <source src={`${AUDIO_BASE}.mod`} type="audio/x-mod" />
-    </audio>
+    <>
+      <button
+        className={`module-mute-button ${isMuted ? "muted" : ""}`}
+        type="button"
+        aria-label={isMuted ? "取消静音背景音乐" : "静音背景音乐"}
+        aria-pressed={isMuted}
+        title={isMuted ? "取消静音" : "静音"}
+        onClick={toggleMuted}
+      >
+        <Icon name={isMuted ? "volumeOff" : "volume"} />
+      </button>
+      <audio
+        ref={audioRef}
+        autoPlay
+        hidden
+        loop
+        preload="auto"
+        src={`${AUDIO_BASE}.mod`}
+        onCanPlay={() => void playLoop()}
+        onPause={resumeAfterPause}
+      >
+        <source src={`${AUDIO_BASE}.mod`} type="audio/x-mod" />
+      </audio>
+    </>
   );
 }

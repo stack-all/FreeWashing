@@ -11,7 +11,7 @@ Dormitory washing machine controller built with React, TypeScript, Vite, and loc
 - Remembered-device flow through `navigator.bluetooth.getDevices()` when Chrome exposes the Web Bluetooth permissions backend.
 - Protocol-driven command generation from `TT / CC / MM / LL` fields and the reverse-engineered CRC.
 - Responsive phone and desktop control console.
-- Local `.mod` 8-bit loop asset under `webui/public/audio/`, mounted as hidden background playback with no user-facing toggle.
+- Local `.mod` 8-bit loop asset under `webui/public/audio/`, mounted as background playback with a mute control.
 - Common presets for intensive wash, standard wash, quick wash, spin, and tub clean.
 - Water-level control and custom parameter builder.
 - Manual raw HEX packet sender.

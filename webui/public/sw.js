@@ -1,4 +1,4 @@
-const CACHE_NAME = "freewashing-v4";
+const CACHE_NAME = "freewashing-v5";
 
 const shellAssets = [
   "./",

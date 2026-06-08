@@ -110,6 +110,7 @@ button {
 }
 
 .app-frame {
+  position: relative;
   width: min(430px, 100%);
   margin: 0 auto;
 }
@@ -128,6 +129,51 @@ button {
   align-items: center;
   gap: 12px;
   min-width: 0;
+  padding-right: 52px;
+}
+
+.module-mute-button {
+  position: absolute;
+  top: 16px;
+  right: 0;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-glass);
+  color: var(--text-soft);
+  cursor: pointer;
+  box-shadow: var(--compact-shadow);
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.module-mute-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.module-mute-button:focus-visible {
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.module-mute-button.muted {
+  border-color: var(--amber-line);
+  background: var(--amber-soft);
+  color: var(--amber-text);
+}
+
+.module-mute-button .icon {
+  width: 1.08rem;
+  height: 1.08rem;
 }
 
 .brand-mark {
