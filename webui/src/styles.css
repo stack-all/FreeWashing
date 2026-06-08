@@ -229,26 +229,26 @@ button {
   display: grid;
   width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin: 0 auto 16px;
+  gap: 4px;
+  margin: 0 auto 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface-muted);
-  padding: 6px;
+  padding: 4px;
 }
 
 .app-tab {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   border-radius: 7px;
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
   font-weight: 800;
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .app-tab.active {
