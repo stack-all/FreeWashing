@@ -1,14 +1,16 @@
+import type { BluetoothPacketEntry } from "../app/types";
 import { Icon } from "../ui/Icon";
 
 interface ManualPanelProps {
   connected: boolean;
+  history: BluetoothPacketEntry[];
   isSending: boolean;
   manualHex: string;
   onManualHexChange: (value: string) => void;
   onSend: () => void;
 }
 
-export function ManualPanel({ connected, isSending, manualHex, onManualHexChange, onSend }: ManualPanelProps) {
+export function ManualPanel({ connected, history, isSending, manualHex, onManualHexChange, onSend }: ManualPanelProps) {
   return (
     <div className="tab-pane-content stack-sm">
       <textarea
@@ -23,6 +25,28 @@ export function ManualPanel({ connected, isSending, manualHex, onManualHexChange
         <Icon name="send" />
         发送自定义包
       </button>
+      <section className="packet-history" aria-label="蓝牙收发历史">
+        <div className="packet-history-head">
+          <strong>蓝牙历史</strong>
+          <span>最近 {history.length} 条</span>
+        </div>
+        {history.length > 0 ? (
+          <div className="packet-list">
+            {history.map((entry) => (
+              <article className={`packet-entry ${entry.direction}`} key={entry.id}>
+                <div className="packet-entry-top">
+                  <span className={`packet-direction ${entry.direction}`}>{entry.direction === "tx" ? "发送" : "响应"}</span>
+                  <strong>{entry.operation}</strong>
+                  <time>{entry.time}</time>
+                </div>
+                <code>{entry.hex}</code>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="packet-empty">暂无蓝牙包</div>
+        )}
+      </section>
     </div>
   );
 }

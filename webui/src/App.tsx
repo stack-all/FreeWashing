@@ -14,6 +14,7 @@ import {
   DEFAULT_STATUS_STATE,
   type AppState,
   type AppTabId,
+  type BluetoothPacketDirection,
   type ControlTabId,
   type LogLevel,
   type SettingField
@@ -54,6 +55,7 @@ function createInitialState(): AppState {
     isUpdating: false,
     isSending: false,
     logs: [],
+    packetHistory: [],
     status: DEFAULT_STATUS_STATE,
     activeAppTab: "connect",
     activeControlTab: "quick",
@@ -65,6 +67,7 @@ export function App() {
   const [state, setState] = useState<AppState>(createInitialState);
   const stateRef = useRef(state);
   const logIdRef = useRef(0);
+  const packetIdRef = useRef(0);
   const statusQueryIdRef = useRef(0);
   const statusQueryTimerRef = useRef<number | null>(null);
   const installPromptRef = useRef<InstallPromptEvent | null>(null);
@@ -101,6 +104,23 @@ export function App() {
       ].slice(0, 50)
     }));
     logIdRef.current += 1;
+  }, []);
+
+  const addPacketHistory = useCallback((direction: BluetoothPacketDirection, operation: string, hex: string) => {
+    setState((previous) => ({
+      ...previous,
+      packetHistory: [
+        {
+          id: packetIdRef.current,
+          time: currentTime(),
+          direction,
+          operation,
+          hex
+        },
+        ...previous.packetHistory
+      ].slice(0, 80)
+    }));
+    packetIdRef.current += 1;
   }, []);
 
   const handleStatusNotification = useCallback(
@@ -165,10 +185,11 @@ export function App() {
           const raw = bytesToHex(bytes);
           const parsed = parseWasherResponse(bytes);
           handleStatusNotification(parsed);
+          addPacketHistory("rx", parsed ? "设备响应" : "未识别响应", raw);
           addLog(parsed ? `收到设备响应: ${raw}` : `收到未识别响应: ${raw}`, parsed?.validCrc === false ? "error" : "info");
         }
       }),
-    [addLog, clearStatusQueryTimer, handleStatusNotification]
+    [addLog, addPacketHistory, clearStatusQueryTimer, handleStatusNotification]
   );
 
   const builderPreview = useMemo(() => getBuilderPreview(state.settings), [state.settings]);
@@ -407,15 +428,17 @@ export function App() {
 
       setState((previous) => ({ ...previous, isSending: true }));
       try {
+        const hex = bytesToHex(bytes);
         await bluetoothClient.send(bytes);
-        addLog(`${label} 已发送: ${bytesToHex(bytes)}`, "success");
+        addPacketHistory("tx", label, hex);
+        addLog(`${label} 已发送: ${hex}`, "success");
       } catch (error) {
         addLog(errorMessage(error), "error");
       } finally {
         setState((previous) => ({ ...previous, isSending: false }));
       }
     },
-    [addLog, bluetoothClient]
+    [addLog, addPacketHistory, bluetoothClient]
   );
 
   const sendManualLikeFrame = useCallback(
@@ -462,7 +485,9 @@ export function App() {
     }));
 
     try {
-      await bluetoothClient.send(buildStatusQueryFrame());
+      const bytes = buildStatusQueryFrame();
+      await bluetoothClient.send(bytes);
+      addPacketHistory("tx", "状态查询", bytesToHex(bytes));
       setState((previous) => {
         if (previous.status.requestId !== requestId || previous.status.phase !== "sending") {
           return previous;
@@ -493,7 +518,7 @@ export function App() {
     } finally {
       setState((previous) => ({ ...previous, isSending: false }));
     }
-  }, [addLog, armStatusQueryTimer, bluetoothClient, clearStatusQueryTimer]);
+  }, [addLog, addPacketHistory, armStatusQueryTimer, bluetoothClient, clearStatusQueryTimer]);
 
   const sendPreset = useCallback(
     (mode: WasherModeDefinition, level: string) => {
@@ -672,6 +697,7 @@ export function App() {
     return (
       <ManualPanel
         connected={connected}
+        history={state.packetHistory}
         isSending={state.isSending}
         manualHex={state.settings.manualHex}
         onManualHexChange={(value) => updateSetting("manualHex", value)}

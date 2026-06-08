@@ -4,6 +4,7 @@ import type { StoredSettings } from "../services/storage";
 import type { IconName } from "../ui/icons";
 
 export type LogLevel = "info" | "success" | "error";
+export type BluetoothPacketDirection = "tx" | "rx";
 export type ConnectionPhase = "idle" | "connecting" | "connected";
 export type ControlTabId = "quick" | "status" | "builder" | "manual";
 export type AppTabId = "connect" | "control";
@@ -15,6 +16,14 @@ export interface LogEntry {
   time: string;
   level: LogLevel;
   message: string;
+}
+
+export interface BluetoothPacketEntry {
+  id: number;
+  time: string;
+  direction: BluetoothPacketDirection;
+  operation: string;
+  hex: string;
 }
 
 export interface StatusViewState {
@@ -40,6 +49,7 @@ export interface AppState {
   isUpdating: boolean;
   isSending: boolean;
   logs: LogEntry[];
+  packetHistory: BluetoothPacketEntry[];
   status: StatusViewState;
   activeAppTab: AppTabId;
   activeControlTab: ControlTabId;
@@ -62,7 +72,7 @@ export const CONTROL_TABS: ControlTabDefinition[] = [
   { id: "quick", label: "常规控制", iconName: "droplet" },
   { id: "status", label: "状态", iconName: "radio" },
   { id: "builder", label: "自定义参数", iconName: "settings" },
-  { id: "manual", label: "蓝牙指令", iconName: "terminal" }
+  { id: "manual", label: "蓝牙历史", iconName: "terminal" }
 ];
 
 export const DEFAULT_STATUS_STATE: StatusViewState = {
