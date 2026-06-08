@@ -566,6 +566,18 @@ export function App() {
     }
   }, [addLog]);
 
+  const copyPacketHex = useCallback(
+    async (hex: string) => {
+      try {
+        await navigator.clipboard.writeText(hex);
+        addLog("已复制蓝牙指令", "success");
+      } catch (error) {
+        addLog(`复制失败: ${errorMessage(error)}`, "error");
+      }
+    },
+    [addLog]
+  );
+
   const installPwa = useCallback(async () => {
     if (stateRef.current.appInstalled) {
       addLog("PWA 已安装", "info");
@@ -705,6 +717,7 @@ export function App() {
         history={state.packetHistory}
         isSending={state.isSending}
         manualHex={state.settings.manualHex}
+        onCopyPacket={(hex) => void copyPacketHex(hex)}
         onManualHexChange={(value) => updateSetting("manualHex", value)}
         onSend={sendManual}
       />

@@ -6,11 +6,12 @@ interface ManualPanelProps {
   history: BluetoothPacketEntry[];
   isSending: boolean;
   manualHex: string;
+  onCopyPacket: (hex: string) => void;
   onManualHexChange: (value: string) => void;
   onSend: () => void;
 }
 
-export function ManualPanel({ connected, history, isSending, manualHex, onManualHexChange, onSend }: ManualPanelProps) {
+export function ManualPanel({ connected, history, isSending, manualHex, onCopyPacket, onManualHexChange, onSend }: ManualPanelProps) {
   return (
     <div className="tab-pane-content stack-sm">
       <textarea
@@ -33,7 +34,21 @@ export function ManualPanel({ connected, history, isSending, manualHex, onManual
         {history.length > 0 ? (
           <div className="packet-list">
             {history.map((entry) => (
-              <article className={`packet-entry ${entry.direction}`} key={entry.id}>
+              <article
+                className={`packet-entry ${entry.direction}`}
+                key={entry.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`复制${entry.operation}蓝牙指令`}
+                title="双击复制蓝牙指令"
+                onDoubleClick={() => onCopyPacket(entry.hex)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onCopyPacket(entry.hex);
+                  }
+                }}
+              >
                 <div className="packet-entry-top">
                   <span className={`packet-direction ${entry.direction}`}>{entry.direction === "tx" ? "发送" : "响应"}</span>
                   <strong>{entry.operation}</strong>
