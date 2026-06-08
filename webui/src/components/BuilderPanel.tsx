@@ -1,6 +1,14 @@
 import type { BuilderPreview, SettingField } from "../app/types";
 import { byteValue } from "../app/protocolBuilder";
-import { WATER_LEVELS, WASHER_MODES } from "../domain/protocol";
+import { parseHexByte } from "../domain/hex";
+import {
+  CONTROL_TRANSACTION,
+  NORMAL_FAMILY,
+  QUERY_TRANSACTION,
+  resolveFamily,
+  WATER_LEVELS,
+  WASHER_MODES
+} from "../domain/protocol";
 import type { StoredSettings } from "../services/storage";
 import { Icon } from "../ui/Icon";
 
@@ -23,6 +31,15 @@ export function BuilderPanel({
   onSend,
   onSettingChange
 }: BuilderPanelProps) {
+  const querySelected = settings.builderTransaction === "query";
+  const transactionValue =
+    settings.builderTransaction === "custom"
+      ? settings.customTransaction
+      : byteValue(settings.builderTransaction === "query" ? QUERY_TRANSACTION : CONTROL_TRANSACTION);
+  const familyValue = querySelected ? byteValue(NORMAL_FAMILY) : getFamilyValue(settings);
+  const modeValue = querySelected ? "00" : settings.builderMode === "custom" ? settings.customMode : settings.builderMode;
+  const parameterValue = querySelected ? "00" : getParameterValue(settings);
+
   return (
     <div className="tab-pane-content builder-body">
       <div className="builder-matrix">
@@ -38,22 +55,22 @@ export function BuilderPanel({
             <option value="query">00 查询</option>
             <option value="custom">自定义</option>
           </select>
-          <input
-            className="input mono"
+          <BuilderValueInput
             id="custom-transaction"
             aria-label="自定义 TT"
-            value={settings.customTransaction}
-            spellCheck={false}
-            onChange={(event) => onSettingChange("customTransaction", event.target.value)}
+            editable={settings.builderTransaction === "custom"}
+            value={transactionValue}
+            onChange={(value) => onSettingChange("customTransaction", value)}
           />
         </div>
 
-        <div className="builder-field">
+        <div className={`builder-field ${querySelected ? "inactive" : ""}`}>
           <label htmlFor="builder-family">CC 命令族</label>
           <select
             className="select"
             id="builder-family"
-            value={settings.builderFamily}
+            value={querySelected ? "9A" : settings.builderFamily}
+            disabled={querySelected}
             onChange={(event) => onSettingChange("builderFamily", event.target.value)}
           >
             <option value="auto">自动推导</option>
@@ -61,24 +78,25 @@ export function BuilderPanel({
             <option value="9B">9B 特殊</option>
             <option value="custom">自定义</option>
           </select>
-          <input
-            className="input mono"
+          <BuilderValueInput
             id="custom-family"
             aria-label="自定义 CC"
-            value={settings.customFamily}
-            spellCheck={false}
-            onChange={(event) => onSettingChange("customFamily", event.target.value)}
+            editable={!querySelected && settings.builderFamily === "custom"}
+            value={familyValue}
+            onChange={(value) => onSettingChange("customFamily", value)}
           />
         </div>
 
-        <div className="builder-field">
+        <div className={`builder-field ${querySelected ? "inactive" : ""}`}>
           <label htmlFor="builder-mode">MM 模式</label>
           <select
             className="select"
             id="builder-mode"
-            value={settings.builderMode}
+            value={querySelected ? "00" : settings.builderMode}
+            disabled={querySelected}
             onChange={(event) => onSettingChange("builderMode", event.target.value)}
           >
+            {querySelected ? <option value="00">00 查询</option> : null}
             {WASHER_MODES.map((mode) => (
               <option value={byteValue(mode.code)} key={mode.id}>
                 {byteValue(mode.code)} {mode.label}
@@ -86,22 +104,22 @@ export function BuilderPanel({
             ))}
             <option value="custom">自定义</option>
           </select>
-          <input
-            className="input mono"
+          <BuilderValueInput
             id="custom-mode"
             aria-label="自定义 MM"
-            value={settings.customMode}
-            spellCheck={false}
-            onChange={(event) => onSettingChange("customMode", event.target.value)}
+            editable={!querySelected && settings.builderMode === "custom"}
+            value={modeValue}
+            onChange={(value) => onSettingChange("customMode", value)}
           />
         </div>
 
-        <div className="builder-field">
+        <div className={`builder-field ${querySelected ? "inactive" : ""}`}>
           <label htmlFor="builder-parameter">LL 参数</label>
           <select
             className="select"
             id="builder-parameter"
-            value={settings.builderParameter}
+            value={querySelected ? "00" : settings.builderParameter}
+            disabled={querySelected}
             onChange={(event) => onSettingChange("builderParameter", event.target.value)}
           >
             <option value="water">最近水位</option>
@@ -113,13 +131,12 @@ export function BuilderPanel({
             ))}
             <option value="custom">自定义</option>
           </select>
-          <input
-            className="input mono"
+          <BuilderValueInput
             id="custom-parameter"
             aria-label="自定义 LL"
-            value={settings.customParameter}
-            spellCheck={false}
-            onChange={(event) => onSettingChange("customParameter", event.target.value)}
+            editable={!querySelected && settings.builderParameter === "custom"}
+            value={parameterValue}
+            onChange={(value) => onSettingChange("customParameter", value)}
           />
         </div>
       </div>
@@ -141,4 +158,60 @@ export function BuilderPanel({
       </div>
     </div>
   );
+}
+
+interface BuilderValueInputProps {
+  id: string;
+  "aria-label": string;
+  editable: boolean;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+function BuilderValueInput({ id, editable, value, onChange, "aria-label": ariaLabel }: BuilderValueInputProps) {
+  return (
+    <input
+      className={`input mono builder-value ${editable ? "editable" : "derived"}`}
+      id={id}
+      aria-label={editable ? ariaLabel : `${ariaLabel} 当前值`}
+      value={value}
+      readOnly={!editable}
+      spellCheck={false}
+      title={editable ? "自定义输入" : "根据左侧选项生成"}
+      onChange={editable ? (event) => onChange(event.target.value) : undefined}
+    />
+  );
+}
+
+function getFamilyValue(settings: StoredSettings): string {
+  if (settings.builderFamily === "custom") {
+    return settings.customFamily;
+  }
+
+  if (settings.builderFamily !== "auto") {
+    return settings.builderFamily;
+  }
+
+  const mode = parseOptionalByte(settings.builderMode === "custom" ? settings.customMode : settings.builderMode);
+  return mode === null ? "--" : byteValue(resolveFamily(mode));
+}
+
+function getParameterValue(settings: StoredSettings): string {
+  if (settings.builderParameter === "custom") {
+    return settings.customParameter;
+  }
+
+  if (settings.builderParameter === "water") {
+    return settings.waterLevel;
+  }
+
+  return settings.builderParameter;
+}
+
+function parseOptionalByte(value: string): number | null {
+  try {
+    return parseHexByte(value, "字节");
+  } catch {
+    return null;
+  }
 }

@@ -723,6 +723,27 @@ button {
   padding-right: 9px;
 }
 
+.builder-field.inactive label {
+  color: var(--text-muted);
+}
+
+.builder-field .select:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.builder-value.derived {
+  border-color: var(--line);
+  background: var(--surface-muted);
+  color: var(--text-soft);
+}
+
+.builder-value.editable {
+  border-color: var(--line-strong);
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
 .builder-actions {
   display: grid;
   grid-template-columns: 1fr;
