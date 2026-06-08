@@ -48,18 +48,19 @@ button {
 
 .app-shell {
   min-height: 100vh;
-  padding: 20px;
+  padding: 12px;
 }
 
 .app-frame {
-  width: min(1180px, 100%);
+  width: min(430px, 100%);
   margin: 0 auto;
 }
 
 .topbar {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: stretch;
+  flex-direction: column;
+  justify-content: flex-start;
   gap: 16px;
   padding: 16px 0 20px;
 }
@@ -99,7 +100,7 @@ button {
 .top-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
 }
 
@@ -109,6 +110,7 @@ button {
 }
 
 .module-loop-button {
+  width: auto;
   min-width: 96px;
   border-color: var(--line-strong);
 }
@@ -121,7 +123,7 @@ button {
 
 .app-tabs {
   display: grid;
-  width: min(520px, 100%);
+  width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin: 0 auto 16px;
@@ -201,7 +203,7 @@ button {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 16px;
   align-items: start;
 }
@@ -211,12 +213,12 @@ button {
 }
 
 .app-view {
-  width: min(860px, 100%);
+  width: 100%;
   margin: 0 auto;
 }
 
 .connection-view {
-  width: min(520px, 100%);
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -269,25 +271,26 @@ button {
 
 .tab-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
   border-bottom: 1px solid var(--line);
   background: var(--surface-muted);
-  padding: 8px;
+  padding: 6px;
 }
 
 .tab-button {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 4px;
   border-radius: 7px;
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
   font-weight: 800;
-  padding: 8px 10px;
+  padding: 7px 6px;
+  font-size: 0.86rem;
 }
 
 .tab-button.active {
@@ -322,13 +325,13 @@ button {
 
 .grid-2 {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
@@ -360,7 +363,7 @@ button {
 
 .status-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(220px, 0.65fr);
+  grid-template-columns: 1fr;
   gap: 14px;
   align-items: start;
 }
@@ -427,7 +430,7 @@ button {
 
 .control-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(152px, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -490,6 +493,7 @@ button {
 
 .button {
   display: inline-flex;
+  width: 100%;
   min-height: 42px;
   align-items: center;
   justify-content: center;
@@ -580,7 +584,7 @@ button {
 
 .builder-matrix {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -610,7 +614,7 @@ button {
 
 .builder-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -722,7 +726,7 @@ code,
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 8px;
 }
 
