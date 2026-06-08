@@ -375,7 +375,7 @@ button {
 
 .tab-strip {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   border-bottom: 1px solid var(--line);
   background: var(--surface-muted);
@@ -388,13 +388,15 @@ button {
   align-items: center;
   justify-content: center;
   gap: 4px;
+  min-width: 0;
   border-radius: 7px;
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
   font-weight: 800;
-  padding: 7px 6px;
-  font-size: 0.86rem;
+  padding: 7px 4px;
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .tab-button.active {
@@ -404,8 +406,13 @@ button {
 }
 
 .tab-button .icon {
-  width: 1rem;
-  height: 1rem;
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.tab-button span {
+  min-width: 0;
 }
 
 .tab-panel {
@@ -907,16 +914,16 @@ code,
   }
 
   .tab-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    padding: 6px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    padding: 4px;
   }
 
   .tab-button {
-    gap: 4px;
-    min-height: 40px;
-    padding: 7px 6px;
-    font-size: 0.86rem;
+    gap: 3px;
+    min-height: 36px;
+    padding: 6px 3px;
+    font-size: 0.76rem;
   }
 }
 
@@ -927,12 +934,22 @@ code,
 }
 
 @media (max-width: 420px) {
+  .tab-button .icon {
+    display: none;
+  }
+
   .builder-matrix {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 340px) {
+  .tab-button {
+    font-size: 0.72rem;
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+
   .builder-field,
   .builder-actions {
     grid-template-columns: 1fr;
