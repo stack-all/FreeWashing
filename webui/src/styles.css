@@ -103,6 +103,22 @@ button {
   gap: 8px;
 }
 
+.module-loop {
+  display: flex;
+  align-items: center;
+}
+
+.module-loop-button {
+  min-width: 96px;
+  border-color: var(--line-strong);
+}
+
+.module-loop-button.active {
+  border-color: rgba(15, 118, 110, 0.36);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
 .app-tabs {
   display: grid;
   width: min(520px, 100%);
@@ -792,6 +808,10 @@ code,
   .top-actions .badge,
   .button {
     width: 100%;
+  }
+
+  .top-actions .module-loop-button {
+    width: auto;
   }
 
   .tab-strip {

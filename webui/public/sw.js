@@ -1,8 +1,10 @@
-const CACHE_NAME = "freewashing-v1";
+const CACHE_NAME = "freewashing-v2";
 
 const shellAssets = [
   "./",
   "./manifest.webmanifest",
+  "./audio/freewashing_8bit_loop.mod",
+  "./audio/freewashing_8bit_loop.ogg",
   "./icons/icon.svg",
   "./icons/icon-maskable.svg"
 ];

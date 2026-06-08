@@ -5,6 +5,7 @@ import { ConnectionView } from "./components/ConnectionView";
 import { ControlTabs } from "./components/ControlTabs";
 import { EnvironmentNotice } from "./components/EnvironmentNotice";
 import { ManualPanel } from "./components/ManualPanel";
+import { ModuleLoopToggle } from "./components/ModuleLoopToggle";
 import { QuickControls } from "./components/QuickControls";
 import { StatusPanel } from "./components/StatusPanel";
 import { defaultSettings, getBuilderPreview } from "./app/protocolBuilder";
@@ -521,6 +522,9 @@ export function App() {
               <h1>FreeWashing</h1>
               <p>宿舍洗衣机蓝牙控制台</p>
             </div>
+          </div>
+          <div className="top-actions" aria-label="页面辅助控制">
+            <ModuleLoopToggle />
           </div>
         </header>
 
