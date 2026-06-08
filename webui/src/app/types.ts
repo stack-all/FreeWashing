@@ -48,6 +48,7 @@ export interface AppState {
   updateAvailable: boolean;
   isUpdating: boolean;
   isSending: boolean;
+  musicSeed: string;
   logs: LogEntry[];
   packetHistory: BluetoothPacketEntry[];
   status: StatusViewState;

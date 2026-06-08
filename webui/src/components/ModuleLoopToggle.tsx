@@ -1,20 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ModLoopPlayer } from "../audio/modPlayer";
+import { ChiptuneLoopPlayer } from "../audio/chiptunePlayer";
 import { Icon } from "../ui/Icon";
 
-const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/freewashing_8bit_loop`;
 const MUTE_STORAGE_KEY = "freewashing.audio-muted.v1";
 
-export function ModuleLoopToggle() {
-  const playerRef = useRef<ModLoopPlayer | null>(null);
+interface ModuleLoopToggleProps {
+  seed: string;
+}
+
+export function ModuleLoopToggle({ seed }: ModuleLoopToggleProps) {
+  const playerRef = useRef<ChiptuneLoopPlayer | null>(null);
   const [isMuted, setIsMuted] = useState(readStoredMutedState);
   const mutedRef = useRef(isMuted);
+  const seedRef = useRef(seed);
 
   const playLoop = useCallback(async () => {
     if (!playerRef.current) {
-      playerRef.current = new ModLoopPlayer(`${AUDIO_BASE}.mod`);
+      playerRef.current = new ChiptuneLoopPlayer(seedRef.current);
     }
 
+    playerRef.current.setSeed(seedRef.current);
     playerRef.current.setMuted(mutedRef.current);
     try {
       await playerRef.current.play();
@@ -49,6 +54,14 @@ export function ModuleLoopToggle() {
       playerRef.current = null;
     };
   }, [playLoop]);
+
+  useEffect(() => {
+    seedRef.current = seed;
+    playerRef.current?.setSeed(seed);
+    if (!mutedRef.current) {
+      void playLoop();
+    }
+  }, [playLoop, seed]);
 
   const toggleMuted = () => {
     const next = !mutedRef.current;

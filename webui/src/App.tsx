@@ -28,6 +28,7 @@ import {
   parseWasherResponse,
   type WasherModeDefinition
 } from "./domain/protocol";
+import { DEFAULT_CHIPTUNE_SEED } from "./audio/chiptunePlayer";
 import { WasherBluetoothClient, type ConnectedDevice } from "./services/bluetooth";
 import {
   activateServiceWorkerUpdate,
@@ -54,6 +55,7 @@ function createInitialState(): AppState {
     updateAvailable: false,
     isUpdating: false,
     isSending: false,
+    musicSeed: DEFAULT_CHIPTUNE_SEED,
     logs: [],
     packetHistory: [],
     status: DEFAULT_STATUS_STATE,
@@ -107,12 +109,16 @@ export function App() {
   }, []);
 
   const addPacketHistory = useCallback((direction: BluetoothPacketDirection, operation: string, hex: string) => {
+    const id = packetIdRef.current;
+    const time = currentTime();
+    packetIdRef.current += 1;
     setState((previous) => ({
       ...previous,
+      musicSeed: direction === "tx" ? `${id}|${time}|${operation}|${hex}` : previous.musicSeed,
       packetHistory: [
         {
-          id: packetIdRef.current,
-          time: currentTime(),
+          id,
+          time,
           direction,
           operation,
           hex
@@ -120,7 +126,6 @@ export function App() {
         ...previous.packetHistory
       ].slice(0, 80)
     }));
-    packetIdRef.current += 1;
   }, []);
 
   const handleStatusNotification = useCallback(
@@ -609,7 +614,7 @@ export function App() {
             </div>
           </div>
         </header>
-        <ModuleLoopToggle />
+        <ModuleLoopToggle seed={state.musicSeed} />
 
         {state.updateAvailable ? (
           <div className="update-banner" role="status" aria-live="polite">
