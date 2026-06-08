@@ -3,11 +3,12 @@ import { ModLoopPlayer } from "../audio/modPlayer";
 import { Icon } from "../ui/Icon";
 
 const AUDIO_BASE = `${import.meta.env.BASE_URL}audio/freewashing_8bit_loop`;
+const MUTE_STORAGE_KEY = "freewashing.audio-muted.v1";
 
 export function ModuleLoopToggle() {
   const playerRef = useRef<ModLoopPlayer | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
-  const mutedRef = useRef(false);
+  const [isMuted, setIsMuted] = useState(readStoredMutedState);
+  const mutedRef = useRef(isMuted);
 
   const playLoop = useCallback(async () => {
     if (!playerRef.current) {
@@ -53,6 +54,7 @@ export function ModuleLoopToggle() {
     const next = !mutedRef.current;
     mutedRef.current = next;
     playerRef.current?.setMuted(next);
+    writeStoredMutedState(next);
     setIsMuted(next);
     if (!next) {
       void playLoop();
@@ -73,4 +75,20 @@ export function ModuleLoopToggle() {
       </button>
     </>
   );
+}
+
+function readStoredMutedState(): boolean {
+  try {
+    return localStorage.getItem(MUTE_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeStoredMutedState(muted: boolean): void {
+  try {
+    localStorage.setItem(MUTE_STORAGE_KEY, muted ? "1" : "0");
+  } catch {
+    // 存储不可用时只影响跨会话记忆，本次运行仍可切换静音。
+  }
 }
