@@ -7,3 +7,4 @@ vite-dev*.log
 .DS_Store
 *.local
 参考/
+.vscode/
