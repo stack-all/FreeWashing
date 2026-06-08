@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vite/
+verification/
+vite-dev*.log
+.idea/
+.DS_Store
+*.local
+参考/
