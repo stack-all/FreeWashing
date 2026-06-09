@@ -6,12 +6,22 @@ interface ManualPanelProps {
   history: BluetoothPacketEntry[];
   isSending: boolean;
   manualHex: string;
+  onClearHistory: () => void;
   onCopyPacket: (hex: string) => void;
   onManualHexChange: (value: string) => void;
   onSend: () => void;
 }
 
-export function ManualPanel({ connected, history, isSending, manualHex, onCopyPacket, onManualHexChange, onSend }: ManualPanelProps) {
+export function ManualPanel({
+  connected,
+  history,
+  isSending,
+  manualHex,
+  onClearHistory,
+  onCopyPacket,
+  onManualHexChange,
+  onSend
+}: ManualPanelProps) {
   return (
     <div className="tab-pane-content stack-sm">
       <textarea
@@ -29,7 +39,13 @@ export function ManualPanel({ connected, history, isSending, manualHex, onCopyPa
       <section className="packet-history" aria-label="蓝牙收发历史">
         <div className="packet-history-head">
           <strong>蓝牙历史</strong>
-          <span>最近 {history.length} 条</span>
+          <div className="packet-history-actions">
+            <span>最近 {history.length} 条</span>
+            <button className="packet-clear-button" type="button" disabled={history.length === 0} onClick={onClearHistory}>
+              <Icon name="trash" />
+              清空
+            </button>
+          </div>
         </div>
         {history.length > 0 ? (
           <div className="packet-list">

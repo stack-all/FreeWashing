@@ -578,6 +578,19 @@ export function App() {
     [addLog]
   );
 
+  const clearPacketHistory = useCallback(() => {
+    setState((previous) => {
+      if (previous.packetHistory.length === 0) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        packetHistory: []
+      };
+    });
+  }, []);
+
   const installPwa = useCallback(async () => {
     if (stateRef.current.appInstalled) {
       addLog("PWA 已安装", "info");
@@ -717,6 +730,7 @@ export function App() {
         history={state.packetHistory}
         isSending={state.isSending}
         manualHex={state.settings.manualHex}
+        onClearHistory={clearPacketHistory}
         onCopyPacket={(hex) => void copyPacketHex(hex)}
         onManualHexChange={(value) => updateSetting("manualHex", value)}
         onSend={sendManual}

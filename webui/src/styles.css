@@ -876,6 +876,48 @@ button {
   white-space: nowrap;
 }
 
+.packet-history-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.packet-clear-button {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-soft);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 5px 8px;
+}
+
+.packet-clear-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.packet-clear-button:not(:disabled):hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.packet-clear-button:focus-visible {
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.packet-clear-button .icon {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
 .packet-list {
   display: grid;
   max-height: 260px;
