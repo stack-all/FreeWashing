@@ -3,9 +3,48 @@ export const DEFAULT_CHIPTUNE_SEED = "freewashing:init";
 const DEFAULT_VOLUME = 0.36;
 const LOOP_STEPS = 64;
 const STEP_DIVISION = 4;
-const SCALE = [0, 2, 3, 5, 7, 10, 12, 14];
+const SCALE_BANK = [
+  [0, 2, 3, 5, 7, 10, 12, 14],
+  [0, 2, 4, 7, 9, 12, 14, 16],
+  [0, 3, 5, 6, 7, 10, 12, 15],
+  [0, 1, 5, 7, 8, 12, 13, 17],
+  [0, 2, 5, 7, 9, 12, 17, 19]
+] as const;
+const WAVE_SHAPES = ["square", "pulse", "triangle", "saw"] as const;
+const DRUM_PROFILES = [
+  { kicks: [0, 8], snares: [4, 12], hatEvery: 2 },
+  { kicks: [0, 6, 10], snares: [4, 12, 14], hatEvery: 2 },
+  { kicks: [0, 4, 8, 12], snares: [6, 14], hatEvery: 1 },
+  { kicks: [0, 7, 11], snares: [3, 12], hatEvery: 4 },
+  { kicks: [0, 5, 8, 13], snares: [4, 10, 14], hatEvery: 1 }
+] as const;
+const BASS_PATTERNS = [
+  [0, 0, 4, 0, 2, 0, 4, 1],
+  [0, 3, 4, 3, 0, 2, 5, 4],
+  [0, 0, 2, 4, 5, 4, 2, 1],
+  [0, 4, 0, 5, 3, 2, 4, 0]
+] as const;
 
 type AudioContextConstructor = new () => AudioContext;
+type WaveShape = (typeof WAVE_SHAPES)[number];
+
+interface ChiptuneProfile {
+  bpm: number;
+  rootMidi: number;
+  scale: readonly number[];
+  melodyLength: number;
+  melodyRestChance: number;
+  leadShape: WaveShape;
+  bassShape: WaveShape;
+  leadGain: number;
+  bassGain: number;
+  drumGain: number;
+  arpeggioGain: number;
+  bitDepth: number;
+  swing: number;
+  drumProfile: (typeof DRUM_PROFILES)[number];
+  bassPattern: readonly number[];
+}
 
 export interface RenderedChiptune {
   left: Float32Array;
@@ -151,46 +190,53 @@ export function renderSeededChiptune(seed: string, sampleRate: number): Rendered
   const normalizedSeed = seed || DEFAULT_CHIPTUNE_SEED;
   const hash = hashSeed(normalizedSeed);
   const random = mulberry32(hash);
-  const bpm = 96 + Math.floor(random() * 32);
-  const rootMidi = 43 + Math.floor(random() * 12);
-  const stepSeconds = 60 / bpm / STEP_DIVISION;
+  const profile = createProfile(hash, random);
+  const stepSeconds = 60 / profile.bpm / STEP_DIVISION;
   const frameCount = Math.round(LOOP_STEPS * stepSeconds * sampleRate);
   const left = new Float32Array(frameCount);
   const right = new Float32Array(frameCount);
-  const melody = createMelody(random);
-  const bass = createBass(random);
-  const hatEveryStep = random() > 0.48;
-  const swing = random() * 0.012;
+  const melody = createMelody(random, profile);
+  const arpeggio = createArpeggio(random, profile.scale);
 
   for (let frame = 0; frame < frameCount; frame += 1) {
     const time = frame / sampleRate;
     const step = Math.floor(time / stepSeconds) % LOOP_STEPS;
     const localStepTime = time - Math.floor(time / stepSeconds) * stepSeconds;
-    const swungTime = time + (step % 2 === 1 ? swing : 0);
+    const swungTime = time + (step % 2 === 1 ? profile.swing : 0);
+    const beatStep = step % 16;
     const melodyNote = melody[step % melody.length];
-    const bassNote = bass[Math.floor(step / 4) % bass.length];
+    const bassNote = profile.bassPattern[Math.floor(step / 4) % profile.bassPattern.length];
+    const accent = beatStep === 0 ? 1.24 : beatStep % 4 === 0 ? 1.08 : 1;
     let sample = 0;
 
     if (melodyNote !== null) {
-      const freq = midiToFrequency(rootMidi + melodyNote);
-      const leadEnvelope = decayEnvelope(localStepTime, stepSeconds * 0.82, 0.28);
+      const freq = midiToFrequency(profile.rootMidi + melodyNote);
+      const leadEnvelope = decayEnvelope(localStepTime, stepSeconds * 0.72, 0.2);
       const duty = 0.42 + ((hash >>> (step % 12)) & 3) * 0.04;
-      sample += squareWave(freq, swungTime, duty) * leadEnvelope * 0.38;
-      sample += squareWave(freq * 2, swungTime, 0.5) * leadEnvelope * 0.09;
+      sample += renderWave(profile.leadShape, freq, swungTime, duty) * leadEnvelope * profile.leadGain * accent;
+      sample += renderWave(profile.leadShape, freq * 2, swungTime, 0.5) * leadEnvelope * profile.leadGain * 0.18;
     }
 
-    if (step % 4 === 0 || step % 4 === 2) {
-      const bassFreq = midiToFrequency(rootMidi - 24 + bassNote);
-      const bassEnvelope = decayEnvelope(localStepTime, stepSeconds * 1.35, 0.42);
-      sample += squareWave(bassFreq, time, 0.5) * bassEnvelope * 0.34;
+    if (shouldRenderBass(step, hash)) {
+      const bassFreq = midiToFrequency(profile.rootMidi - 24 + profile.scale[bassNote % profile.scale.length]);
+      const bassEnvelope = decayEnvelope(localStepTime, stepSeconds * 1.18, 0.34);
+      sample += renderWave(profile.bassShape, bassFreq, time, 0.5) * bassEnvelope * profile.bassGain;
     }
 
-    sample += renderKick(step, localStepTime, stepSeconds, time);
-    sample += renderSnare(hash, step, localStepTime, stepSeconds, frame);
-    sample += renderHat(hash, step, localStepTime, stepSeconds, frame, hatEveryStep);
+    if (profile.arpeggioGain > 0) {
+      const arpNote = arpeggio[(step + Math.floor(localStepTime / Math.max(stepSeconds / 3, 0.001))) % arpeggio.length];
+      const arpFreq = midiToFrequency(profile.rootMidi + 12 + arpNote);
+      const arpEnvelope = decayEnvelope(localStepTime, stepSeconds * 0.58, 0.16);
+      sample += renderWave("pulse", arpFreq, time, 0.25) * arpEnvelope * profile.arpeggioGain;
+    }
 
-    const quantized = quantize8Bit(clamp(sample * 0.72, -1, 1));
-    const pan = melodyNote === null ? 0 : ((melodyNote % 5) - 2) * 0.04;
+    sample += renderKick(profile, step, localStepTime, stepSeconds, time);
+    sample += renderSnare(profile, hash, step, localStepTime, stepSeconds, frame);
+    sample += renderHat(profile, hash, step, localStepTime, stepSeconds, frame);
+    sample += renderSeedFill(profile, hash, step, localStepTime, stepSeconds, time, frame);
+
+    const quantized = quantize8Bit(clamp(sample * 0.74, -1, 1), profile.bitDepth);
+    const pan = melodyNote === null ? 0 : ((melodyNote % 7) - 3) * 0.035;
     left[frame] = clamp(quantized * (0.94 - pan), -1, 1);
     right[frame] = clamp(quantized * (0.94 + pan), -1, 1);
   }
@@ -203,67 +249,131 @@ export function renderSeededChiptune(seed: string, sampleRate: number): Rendered
   };
 }
 
-function createMelody(random: () => number): Array<number | null> {
+function createProfile(hash: number, random: () => number): ChiptuneProfile {
+  const energy = hash & 3;
+  const tempoBase = [88, 102, 116, 130][energy];
+  const profileIndex = (hash >>> 4) % DRUM_PROFILES.length;
+  const scale = SCALE_BANK[(hash >>> 8) % SCALE_BANK.length];
+  return {
+    bpm: tempoBase + Math.floor(random() * 8),
+    rootMidi: [38, 41, 43, 45, 48, 50][(hash >>> 12) % 6],
+    scale,
+    melodyLength: [8, 12, 16, 32][(hash >>> 16) & 3],
+    melodyRestChance: [0.12, 0.2, 0.32, 0.42][(hash >>> 18) & 3],
+    leadShape: WAVE_SHAPES[(hash >>> 20) % WAVE_SHAPES.length],
+    bassShape: WAVE_SHAPES[(hash >>> 22) % WAVE_SHAPES.length],
+    leadGain: [0.32, 0.42, 0.5, 0.58][energy],
+    bassGain: [0.42, 0.36, 0.46, 0.32][(hash >>> 24) & 3],
+    drumGain: [0.72, 0.86, 1, 1.12][profileIndex % 4],
+    arpeggioGain: ((hash >>> 26) & 3) === 0 ? 0 : [0.1, 0.16, 0.22][(hash >>> 28) % 3],
+    bitDepth: [5, 6, 7, 8][(hash >>> 2) & 3],
+    swing: (((hash >>> 6) & 3) / 3) * 0.018,
+    drumProfile: DRUM_PROFILES[profileIndex],
+    bassPattern: BASS_PATTERNS[(hash >>> 10) % BASS_PATTERNS.length]
+  };
+}
+
+function createMelody(random: () => number, profile: ChiptuneProfile): Array<number | null> {
   const phrase: Array<number | null> = [];
-  for (let index = 0; index < 16; index += 1) {
-    if (index % 4 !== 0 && random() < 0.28) {
+  let previousDegree = 0;
+
+  for (let index = 0; index < profile.melodyLength; index += 1) {
+    if (index % 4 !== 0 && random() < profile.melodyRestChance) {
       phrase.push(null);
       continue;
     }
 
-    const octave = random() > 0.78 ? 12 : 0;
-    phrase.push(SCALE[Math.floor(random() * SCALE.length)] + octave);
+    const leap = random() > 0.72 ? Math.floor(random() * profile.scale.length) : Math.max(0, previousDegree + Math.floor(random() * 3) - 1);
+    previousDegree = leap % profile.scale.length;
+    const octave = random() > 0.7 ? 12 : random() < 0.12 ? -12 : 0;
+    phrase.push(profile.scale[previousDegree] + octave);
   }
   return phrase;
 }
 
-function createBass(random: () => number): number[] {
-  const root = SCALE[0];
-  const fifth = SCALE[4];
-  const minor = SCALE[2];
-  const walk = SCALE[Math.floor(random() * 4)];
-  return [root, root, fifth, root, minor, root, fifth, walk];
+function createArpeggio(random: () => number, scale: readonly number[]): number[] {
+  const first = scale[0];
+  const second = scale[2 + Math.floor(random() * 2)] ?? scale[2];
+  const third = scale[4 + Math.floor(random() * 2)] ?? scale[4];
+  const turn = scale[1 + Math.floor(random() * 5)] ?? scale[1];
+  return [first, second, third, second, turn, third, second, first];
 }
 
-function renderKick(step: number, localTime: number, stepSeconds: number, time: number): number {
-  const beatStep = step % 16;
-  if (beatStep !== 0 && beatStep !== 8) {
+function shouldRenderBass(step: number, hash: number): boolean {
+  const pattern = (hash >>> 14) & 3;
+  if (pattern === 0) {
+    return step % 4 === 0 || step % 4 === 2;
+  }
+  if (pattern === 1) {
+    return step % 4 !== 3;
+  }
+  if (pattern === 2) {
+    return step % 2 === 0;
+  }
+  return step % 8 === 0 || step % 8 === 3 || step % 8 === 6;
+}
+
+function renderKick(profile: ChiptuneProfile, step: number, localTime: number, stepSeconds: number, time: number): number {
+  if (!(profile.drumProfile.kicks as readonly number[]).includes(step % 16)) {
     return 0;
   }
 
   const envelope = decayEnvelope(localTime, stepSeconds * 0.92, 0.24);
   const freq = 46 + 86 * Math.exp(-localTime * 34);
-  return Math.sin(Math.PI * 2 * freq * time) * envelope * 0.42;
+  return Math.sin(Math.PI * 2 * freq * time) * envelope * 0.42 * profile.drumGain;
 }
 
-function renderSnare(hash: number, step: number, localTime: number, stepSeconds: number, frame: number): number {
-  const beatStep = step % 16;
-  if (beatStep !== 4 && beatStep !== 12) {
+function renderSnare(profile: ChiptuneProfile, hash: number, step: number, localTime: number, stepSeconds: number, frame: number): number {
+  if (!(profile.drumProfile.snares as readonly number[]).includes(step % 16)) {
     return 0;
   }
 
   const envelope = decayEnvelope(localTime, stepSeconds * 0.64, 0.18);
-  return seededNoise(frame, hash ^ 0x9e3779b9) * envelope * 0.28;
+  return seededNoise(frame, hash ^ 0x9e3779b9) * envelope * 0.28 * profile.drumGain;
 }
 
 function renderHat(
+  profile: ChiptuneProfile,
   hash: number,
   step: number,
   localTime: number,
   stepSeconds: number,
-  frame: number,
-  hatEveryStep: boolean
+  frame: number
 ): number {
-  if (!hatEveryStep && step % 2 !== 0) {
+  if (step % profile.drumProfile.hatEvery !== 0) {
     return 0;
   }
 
-  if (hatEveryStep && step % 2 !== 0 && ((hash >>> (step % 12)) & 1) === 0) {
+  if (profile.drumProfile.hatEvery === 1 && step % 2 !== 0 && ((hash >>> (step % 12)) & 1) === 0) {
     return 0;
   }
 
   const envelope = decayEnvelope(localTime, stepSeconds * 0.28, 0.08);
-  return seededNoise(frame, hash ^ 0x85ebca6b) * envelope * 0.12;
+  return seededNoise(frame, hash ^ 0x85ebca6b) * envelope * 0.12 * profile.drumGain;
+}
+
+function renderSeedFill(
+  profile: ChiptuneProfile,
+  hash: number,
+  step: number,
+  localTime: number,
+  stepSeconds: number,
+  time: number,
+  frame: number
+): number {
+  const fillMode = (hash >>> 30) & 3;
+  const beatStep = step % 16;
+  if (fillMode === 0 || beatStep < 13) {
+    return 0;
+  }
+
+  const envelope = decayEnvelope(localTime, stepSeconds * 0.38, 0.12);
+  if (fillMode === 1) {
+    return seededNoise(frame, hash ^ 0xc2b2ae35) * envelope * 0.18 * profile.drumGain;
+  }
+
+  const fillFreq = midiToFrequency(profile.rootMidi + 12 + profile.scale[(beatStep + fillMode) % profile.scale.length]);
+  return renderWave(fillMode === 2 ? "saw" : "pulse", fillFreq, time, 0.25) * envelope * 0.2;
 }
 
 function decayEnvelope(localTime: number, length: number, sharpness: number): number {
@@ -275,6 +385,23 @@ function decayEnvelope(localTime: number, length: number, sharpness: number): nu
   return Math.pow(1 - normalized, 1 / sharpness);
 }
 
+function renderWave(shape: WaveShape, frequency: number, time: number, duty: number): number {
+  if (shape === "pulse") {
+    return squareWave(frequency, time, duty);
+  }
+
+  const phase = (time * frequency) % 1;
+  if (shape === "triangle") {
+    return 1 - 4 * Math.abs(phase - 0.5);
+  }
+
+  if (shape === "saw") {
+    return phase * 2 - 1;
+  }
+
+  return squareWave(frequency, time, 0.5);
+}
+
 function squareWave(frequency: number, time: number, duty: number): number {
   const phase = (time * frequency) % 1;
   return phase < duty ? 1 : -1;
@@ -284,8 +411,9 @@ function midiToFrequency(note: number): number {
   return 440 * 2 ** ((note - 69) / 12);
 }
 
-function quantize8Bit(sample: number): number {
-  return Math.round(sample * 127) / 127;
+function quantize8Bit(sample: number, bitDepth: number): number {
+  const steps = 2 ** bitDepth - 1;
+  return Math.round(sample * steps) / steps;
 }
 
 function seededNoise(index: number, seed: number): number {

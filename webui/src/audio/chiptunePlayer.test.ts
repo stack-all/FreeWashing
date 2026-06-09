@@ -9,6 +9,19 @@ function signature(samples: Float32Array): number {
   return value;
 }
 
+function averageDifference(first: Float32Array, second: Float32Array): number {
+  const frameCount = Math.min(first.length, second.length);
+  let total = 0;
+  let samples = 0;
+
+  for (let index = 0; index < frameCount; index += 97) {
+    total += Math.abs(first[index] - second[index]);
+    samples += 1;
+  }
+
+  return total / samples;
+}
+
 describe("chiptunePlayer", () => {
   it("renders deterministic PCM for the same seed", () => {
     const first = renderSeededChiptune("AA 01 9A 03 02 0A 6F 55", 8000);
@@ -24,6 +37,7 @@ describe("chiptunePlayer", () => {
     const pause = renderSeededChiptune("暂停|AA 02 9A 00 00 DB 64 55", 8000);
 
     expect(signature(quickWash.left)).not.toBe(signature(pause.left));
+    expect(averageDifference(quickWash.left, pause.left)).toBeGreaterThan(0.05);
   });
 
   it("renders an audible 8-bit loop", () => {

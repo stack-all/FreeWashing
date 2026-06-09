@@ -111,10 +111,11 @@ export function App() {
   const addPacketHistory = useCallback((direction: BluetoothPacketDirection, operation: string, hex: string) => {
     const id = packetIdRef.current;
     const time = currentTime();
+    const musicNonce = `${Date.now()}|${Math.round(performance.now() * 1000)}`;
     packetIdRef.current += 1;
     setState((previous) => ({
       ...previous,
-      musicSeed: direction === "tx" ? `${id}|${time}|${operation}|${hex}` : previous.musicSeed,
+      musicSeed: direction === "tx" ? `${id}|${musicNonce}|${operation}|${hex}` : previous.musicSeed,
       packetHistory: [
         {
           id,
