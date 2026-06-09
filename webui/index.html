@@ -3,14 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f766e" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0d1312" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#006989" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#071c21" media="(prefers-color-scheme: dark)" />
     <meta
       name="description"
       content="通过 Web Bluetooth 控制宿舍洗衣机的 PWA 应用。"
     />
     <title>FreeWashing</title>
-    <link rel="manifest" href="./manifest.webmanifest" />
+    <style>
+      html,
+      body,
+      #app {
+        background: #f3f7ec;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html,
+        body,
+        #app {
+          background: #071c21;
+        }
+      }
+    </style>
+    <script>
+      (() => {
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+        const link = document.createElement("link");
+        link.rel = "manifest";
+        link.href = media.matches ? "./manifest.dark.webmanifest" : "./manifest.webmanifest";
+        document.head.append(link);
+
+        const updateManifest = (event) => {
+          link.href = event.matches ? "./manifest.dark.webmanifest" : "./manifest.webmanifest";
+        };
+
+        if (typeof media.addEventListener === "function") {
+          media.addEventListener("change", updateManifest);
+        } else {
+          media.addListener(updateManifest);
+        }
+      })();
+    </script>
     <link rel="icon" href="./icons/icon.svg" type="image/svg+xml" />
   </head>
   <body>
